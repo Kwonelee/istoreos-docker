@@ -14,6 +14,7 @@ on:
 env:
   VERSION: 24.10.7
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
   DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
 
 jobs:
@@ -69,7 +70,7 @@ jobs:
         docker tag ${DOCKER_IMAGE} ${DOCKER_LATEST}
         
         # 登录 Docker Hub
-        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        echo "${{ env.DOCKER_PASSWORD }}" | docker login -u "${{ env.DOCKER_USERNAME }}" --password-stdin
         
         # 推送镜像
         docker push ${DOCKER_IMAGE}
