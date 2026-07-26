@@ -3,7 +3,7 @@
 ```bash
 services:
   istoreos:
-    image: istoreos:24.10.7-20260703
+    image: kwonelee/istoreos-docker:latest
     container_name: istoreos
     privileged: true
     restart: always
