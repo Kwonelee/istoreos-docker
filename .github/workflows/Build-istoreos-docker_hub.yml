@@ -65,8 +65,8 @@ jobs:
         DOCKER_IMAGE="${{ env.DOCKER_REPO }}:${IMAGE_TAG}"
         DOCKER_LATEST="${{ env.DOCKER_REPO }}:latest"
         
-        # 导入 Docker 镜像
-        gunzip -c "$ROOTFS_FILE" | docker import - ${DOCKER_IMAGE}
+        # 导入 Docker 镜像（指定 arm64 平台）
+        gunzip -c "$ROOTFS_FILE" | docker import --platform linux/arm64 - ${DOCKER_IMAGE}
         docker tag ${DOCKER_IMAGE} ${DOCKER_LATEST}
         
         # 登录 Docker Hub
