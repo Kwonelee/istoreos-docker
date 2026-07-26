@@ -1,0 +1,93 @@
+name: Build-istoreos-docker
+on:
+  workflow_dispatch:
+    inputs:
+      build_version:
+        description: "1、请选择构建版本"
+        required: true
+        default: '20260703'
+        type: choice
+        options:
+          - '20260703'
+          - '20260605'
+
+env:
+  VERSION: 24.10.7
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: ⚙️ 设置可执行权限
+      run: | 
+        chmod +x arm64/build24.sh
+
+    - name: ⏬ 安装依赖
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses5-dev zstd curl unzip tree
+
+    - name: ⏬ 下载 ImageBuilder
+      run: |
+        curl -L -o imagebuilder.tar.zst https://github.com/Kwonelee/iStoreOS-Actions/releases/download/iStoreOS-ImageBuilder/${{ inputs.build_version }}-istoreos-imagebuilder-armsr-armv8.Linux-x86_64.tar.zst
+        tar --use-compress-program=unzstd -xvf imagebuilder.tar.zst
+        mv istoreos-imagebuilder-* imagebuilder
+
+    - name: ⏬ 复制并设置必备文件
+      run: |
+        sed -i "s/版本号/${{ env.VERSION }}/g" "./files/etc/uci-defaults/99-custom.sh"
+        cp arm64/build24.sh imagebuilder/
+        #cp arm64/Makefile imagebuilder/
+        cp -r files imagebuilder/
+        find arm64/packages/ -name "*.ipk" -exec cp {} imagebuilder/packages/ \;
+        
+        cd imagebuilder
+        sed -i 's/# CONFIG_TARGET_ROOTFS_TARGZ is not set/CONFIG_TARGET_ROOTFS_TARGZ=y/' .config
+        sed -i "s|CONFIG_TARGET_ROOTFS_SQUASHFS=.*|# CONFIG_TARGET_ROOTFS_SQUASHFS is not set|g" .config
+        sed -i "s|CONFIG_TARGET_IMAGES_GZIP=.*|# CONFIG_TARGET_IMAGES_GZIP is not set|g" .config
+
+    - name: 🧱 构建 Rootfs 镜像
+      working-directory: ./imagebuilder
+      run: bash ./build24.sh
+
+    - name: 🐳 构建 Docker 镜像并导出
+      id: docker_build
+      run: |
+        # 查找 rootfs 文件
+        ROOTFS_FILE=$(find imagebuilder/bin/targets/armsr/armv8/ -name "*generic-rootfs.tar.gz" | head -1)
+        
+        # 生成镜像标签
+        IMAGE_TAG="${{ env.VERSION }}-${{ inputs.build_version }}"
+        
+        # 直接从 rootfs.tar.gz 导入 Docker 镜像
+        gunzip -c "$ROOTFS_FILE" | docker import - istoreos:${IMAGE_TAG}
+        
+        # 导出 Docker 镜像（未压缩）
+        docker save istoreos:${IMAGE_TAG} > istoreos-docker-${IMAGE_TAG}.tar
+        
+        # 保存文件名供后续使用
+        echo "docker_file=istoreos-docker-${IMAGE_TAG}.tar" >> $GITHUB_OUTPUT
+
+    - name: 🚀 上传到 Release
+      uses: softprops/action-gh-release@v2.2.1
+      with:
+        tag_name: iStoreOS-${{ env.VERSION }}-Docker
+        body: |
+          📌 版本： iStoreOS-${{ env.VERSION }}-Docker
+          
+          📂 来源： [iStoreOS-ImageBuilder](https://github.com/Kwonelee/iStoreOS-Actions/releases/tag/iStoreOS-ImageBuilder)
+          
+          🖥️ 平台： arm64
+          
+          👤 用户名： root
+          
+          🔒 密码： 无
+          
+          🌐 IP： 动态获取（从上级路由找寻）
+        files: |
+          ${{ steps.docker_build.outputs.docker_file }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
