@@ -1,4 +1,4 @@
-name: Build-istoreos-docker-2
+name: Build-istoreos-docker_hub
 on:
   workflow_dispatch:
     inputs:
