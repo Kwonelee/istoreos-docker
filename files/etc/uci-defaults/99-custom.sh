@@ -3,9 +3,13 @@
 
 # 设置默认语言
 uci set luci.main.lang='zh_cn'
-# 保存设置
 uci commit system
 uci commit luci
+
+# 关闭 IPv6 AAAA 记录过滤
+uci set dhcp.@dnsmasq[0].filter_aaaa='0'
+uci commit dhcp
+/etc/init.d/dnsmasq restart
 
 # 设置版本信息
 FILE_PATH="/etc/openwrt_release"
