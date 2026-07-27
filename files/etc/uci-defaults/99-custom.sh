@@ -18,20 +18,22 @@ sed -i "s#^DISTRIB_DESCRIPTION=.*#DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'#" "$FIL
 uci set dhcp.@dnsmasq[0].filter_aaaa='0'
 
 # 删除 DockerNAT 规则
-uci delete firewall.docker_nat 2>/dev/null
+uci -q batch <<-EOF
+	delete firewall.docker_nat
+	commit firewall
+EOF
 
-# 一次性提交所有更改
+# 提交其他更改
 uci commit system
 uci commit luci
 uci commit dhcp
-uci commit firewall
 
 # ==================== 第三部分：重启服务 ====================
 
 # 先重启 DNS 服务
 /etc/init.d/dnsmasq restart
 
-# 再重启防火墙（避免影响 DNS 查询）
+# 再重启防火墙
 /etc/init.d/firewall restart
 
 exit 0
