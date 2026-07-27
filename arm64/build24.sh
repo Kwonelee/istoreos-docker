@@ -27,6 +27,20 @@ PACKAGES="$PACKAGES luci-i18n-firewall-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-ramfree-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-filebrowser-go-zh-cn"
 
+# 深度优化：Docker环境下共享宿主机内核，不需要任何内核模块
+PACKAGES="$PACKAGES \
+    -blkid -e2fsprogs \
+    -kmod-amazon-ena -kmod-atlantic -kmod-bcmgenet \
+    -kmod-dwmac-imx -kmod-dwmac-rockchip -kmod-dwmac-sun8i -kmod-e1000e \
+    -kmod-fs-vfat -kmod-fsl-dpaa1-net -kmod-fsl-dpaa2-net -kmod-fsl-enetc-net -kmod-fsl-fec \
+    -kmod-gpio-pca953x -kmod-i2c-mux-pca954x \
+    -kmod-mvneta -kmod-mvpp2 \
+    -kmod-octeontx2-net \
+    -kmod-phy-aquantia -kmod-phy-broadcom -kmod-phy-marvell -kmod-phy-marvell-10g \
+    -kmod-phy-realtek -kmod-phy-smsc -kmod-renesas-net-avb \
+    -kmod-rtc-rx8025 -kmod-sfp -kmod-vmxnet3 -kmod-wdt-sp805 \
+    -mkf2fs -partx-utils"
+
 # 构建镜像
 echo "开始构建......打印所有包名===="
 echo "$PACKAGES"
