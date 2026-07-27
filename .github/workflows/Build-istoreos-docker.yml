@@ -61,8 +61,8 @@ jobs:
         # 生成镜像标签
         IMAGE_TAG="${{ env.VERSION }}-${{ inputs.build_version }}"
         
-        # 直接从 rootfs.tar.gz 导入 Docker 镜像
-        gunzip -c "$ROOTFS_FILE" | docker import - istoreos:${IMAGE_TAG}
+        # 直接从 rootfs.tar.gz 导入 Docker 镜像（指定 arm64 平台）
+        gunzip -c "$ROOTFS_FILE" | docker import --platform linux/arm64 - istoreos:${IMAGE_TAG}
         
         # 导出 Docker 镜像（未压缩）
         docker save istoreos:${IMAGE_TAG} > istoreos-docker-${IMAGE_TAG}.tar
