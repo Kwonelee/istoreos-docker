@@ -5,53 +5,79 @@ on:
       build_version:
         description: "1、请选择构建版本"
         required: true
-        default: '20260731'
+        default: 'istoreos-24.10.8'
         type: choice
         options:
-          - '20260731'
-          - '20260703'
+          - 'istoreos-24.10.8'
+          - 'openwrt-25.12.5'
+          - 'immortalwrt-25.12.1'
 
 env:
-  VERSION: 24.10.8
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
   DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
 
 jobs:
   build:
-    runs-on: ubuntu-22.04    
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - name: 📥 检出代码
+      uses: actions/checkout@v6
 
-    - name: ⚙️ 设置可执行权限
+    - name: 🔍 解析版本
+      id: version
+      run: |
+        SOURCE=$(echo "${{ inputs.build_version }}" | cut -d'-' -f1)
+        BRANCH=$(echo "${{ inputs.build_version }}" | cut -d'-' -f2)
+        echo "source=${SOURCE}" >> $GITHUB_OUTPUT
+        echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+        echo "✅ 源: ${SOURCE}, 分支: ${BRANCH}"
+
+    - name: ⚙️ 设置权限
       run: | 
-        chmod +x arm64/build24.sh
+        chmod +x arm64/${{ steps.version.outputs.source }}/build24.sh
 
-    - name: ⏬ 安装依赖
+    - name: 📦 安装依赖
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential libncurses5-dev zstd curl unzip tree
 
     - name: ⏬ 下载 ImageBuilder
+      id: download
       run: |
-        curl -L -o imagebuilder.tar.zst https://github.com/Kwonelee/iStoreOS-Actions/releases/download/iStoreOS-ImageBuilder/${{ inputs.build_version }}-istoreos-imagebuilder-armsr-armv8.Linux-x86_64.tar.zst
+        SOURCE="${{ steps.version.outputs.source }}"
+        BRANCH="${{ steps.version.outputs.branch }}"
+        if [[ "${SOURCE}" == "istoreos" ]]; then
+          DOWNLOAD_URL="https://github.com/Kwonelee/iStoreOS-Actions/releases/download/iStoreOS-ImageBuilder/20260731-istoreos-imagebuilder-armsr-armv8.Linux-x86_64.tar.zst"
+          else
+          DOWNLOAD_URL="https://downloads.${SOURCE}.org/releases/${BRANCH}/targets/armsr/armv8/${SOURCE}-imagebuilder-${BRANCH}-armsr-armv8.Linux-x86_64.tar.zst"
+        fi
+        echo "✅ 下载地址: ${DOWNLOAD_URL}"
+        curl -L -o imagebuilder.tar.zst "${DOWNLOAD_URL}"
         tar --use-compress-program=unzstd -xvf imagebuilder.tar.zst
-        mv istoreos-imagebuilder-* imagebuilder
+        mv -f *-imagebuilder-* imagebuilder
 
-    - name: ⏬ 复制并设置必备文件
+    - name: 📋 配置构建环境
       run: |
-        sed -i "s/版本号/${{ env.VERSION }}/g" "./files/etc/uci-defaults/99_z_custom.sh"
-        cp arm64/build24.sh imagebuilder/
-        cp -r files imagebuilder/
-        find arm64/packages/ -name "*.ipk" -exec cp {} imagebuilder/packages/ \;
+        sed -i "s/版本号/${{ steps.version.outputs.branch }}/g" "./arm64/${{ steps.version.outputs.source }}/files/etc/uci-defaults/99_z_custom.sh"
+        cp arm64/${{ steps.version.outputs.source }}/build24.sh imagebuilder/
+        cp -r arm64/${{ steps.version.outputs.source }}/files imagebuilder/
+        if [[ "${{ steps.version.outputs.source }}" == "istoreos" ]]; then
+          find arm64/packages/ -name "*.ipk" -exec cp {} imagebuilder/packages/ \;
+        elif [[ "${{ steps.version.outputs.source }}" == "openwrt" ]]; then
+          find arm64/packages/ -name "*.apk" -exec cp {} imagebuilder/packages/ \;
+        fi
         
         cd imagebuilder
         sed -i 's/# CONFIG_TARGET_ROOTFS_TARGZ is not set/CONFIG_TARGET_ROOTFS_TARGZ=y/' .config
+        sed -i "s|CONFIG_TARGET_ROOTFS_CPIOGZ=.*|# CONFIG_TARGET_ROOTFS_CPIOGZ is not set|g" .config
+        sed -i "s|CONFIG_TARGET_ROOTFS_EXT4FS=.*|# CONFIG_TARGET_ROOTFS_EXT4FS is not set|g" .config
         sed -i "s|CONFIG_TARGET_ROOTFS_SQUASHFS=.*|# CONFIG_TARGET_ROOTFS_SQUASHFS is not set|g" .config
         sed -i "s|CONFIG_TARGET_IMAGES_GZIP=.*|# CONFIG_TARGET_IMAGES_GZIP is not set|g" .config
 
-    - name: 🧱 构建 Rootfs 镜像
+    - name: 🧱 构建 Rootfs
       working-directory: ./imagebuilder
       run: bash ./build24.sh
 
