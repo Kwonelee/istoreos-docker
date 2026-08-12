@@ -21,7 +21,7 @@
 
 ## 🐳 Docker Compose 部署
 <details open>
-  <summary>🐳iStoreOS-Docker部署</summary>
+  <summary>🐳 iStoreOS-Docker 部署</summary>
 
 ```bash
 services:
@@ -49,7 +49,7 @@ networks:
 </details>
 
 <details>
-  <summary>🐳OpenWrt-Docker部署</summary>
+  <summary>🐳 OpenWrt-Docker 部署</summary>
 
 ```bash
 services:
@@ -65,6 +65,34 @@ services:
 networks:
   openwrt_macnet:
     name: openwrt_macnet
+    driver: macvlan
+    driver_opts:
+      # 这里替换为你设备的网卡名称（如eth0、end0、enp1s0、enp1s0-ovs等）ip link show可查；不支持无线网卡
+      parent: end0
+    ipam:
+      config:
+        - subnet: 192.168.5.0/24 # 这里换成你的NAS所在的网段(比如192.168.5.0/24)
+          gateway: 192.168.5.1 # 这里换成你的NAS所在的网关（比如192.168.5.1）
+```
+</details>
+
+<details>
+  <summary>🐳 ImmortalWrt-Docker 部署</summary>
+
+```bash
+services:
+  immortalwrt:
+    image: kwonelee/immortalwrt-docker:latest
+    container_name: immortalwrt
+    privileged: true
+    restart: always
+    networks:
+      immortalwrt_macnet: 
+    command: /sbin/init
+
+networks:
+  immortalwrt_macnet:
+    name: immortalwrt_macnet
     driver: macvlan
     driver_opts:
       # 这里替换为你设备的网卡名称（如eth0、end0、enp1s0、enp1s0-ovs等）ip link show可查；不支持无线网卡
