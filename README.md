@@ -19,9 +19,9 @@
 
 ---
 
-## 😅 Docker Compose 部署
+## 🐳 Docker Compose 部署
 <details open>
-  <summary>iStoreOS-Docker部署</summary>
+  <summary>🐳iStoreOS-Docker部署</summary>
 
 ```bash
 services:
@@ -49,7 +49,7 @@ networks:
 </details>
 
 <details>
-  <summary>OpenWrt-Docker部署</summary>
+  <summary>🐳OpenWrt-Docker部署</summary>
 
 ```bash
 services:
