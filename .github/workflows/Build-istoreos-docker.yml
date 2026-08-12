@@ -1,0 +1,115 @@
+name: Build OpenWrt Docker image
+on:
+  workflow_dispatch:
+    inputs:
+      build_version:
+        description: "1、请选择构建版本"
+        required: true
+        default: 'istoreos-24.10.8'
+        type: choice
+        options:
+          - 'istoreos-24.10.8'
+          - 'openwrt-25.12.5'
+          - 'immortalwrt-25.12.1'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+    - name: 📥 检出代码
+      uses: actions/checkout@v6
+
+    - name: 🔍 解析版本
+      id: version
+      run: |
+        SOURCE=$(echo "${{ inputs.build_version }}" | cut -d'-' -f1)
+        BRANCH=$(echo "${{ inputs.build_version }}" | cut -d'-' -f2)
+        echo "source=${SOURCE}" >> $GITHUB_OUTPUT
+        echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+        echo "✅ 源: ${SOURCE}, 分支: ${BRANCH}"
+
+    - name: ⚙️ 设置权限
+      run: | 
+        chmod +x arm64/${{ steps.version.outputs.source }}/build24.sh
+
+    - name: 📦 安装依赖
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses5-dev zstd curl unzip tree
+
+    - name: ⏬ 下载 ImageBuilder
+      id: download
+      run: |
+        SOURCE="${{ steps.version.outputs.source }}"
+        BRANCH="${{ steps.version.outputs.branch }}"
+        if [[ "${SOURCE}" == "istoreos" ]]; then
+          DOWNLOAD_URL="https://github.com/Kwonelee/iStoreOS-Actions/releases/download/iStoreOS-ImageBuilder/20260731-istoreos-imagebuilder-armsr-armv8.Linux-x86_64.tar.zst"
+          else
+          DOWNLOAD_URL="https://downloads.${SOURCE}.org/releases/${BRANCH}/targets/armsr/armv8/${SOURCE}-imagebuilder-${BRANCH}-armsr-armv8.Linux-x86_64.tar.zst"
+        fi
+        echo "✅ 下载地址: ${DOWNLOAD_URL}"
+        curl -L -o imagebuilder.tar.zst "${DOWNLOAD_URL}"
+        tar --use-compress-program=unzstd -xvf imagebuilder.tar.zst
+        mv -f *-imagebuilder-* imagebuilder
+
+    - name: 📋 配置构建环境
+      run: |
+        sed -i "s/版本号/${{ steps.version.outputs.branch }}/g" "./arm64/${{ steps.version.outputs.source }}/files/etc/uci-defaults/99_z_custom.sh"
+        cp arm64/${{ steps.version.outputs.source }}/build24.sh imagebuilder/
+        cp -r arm64/${{ steps.version.outputs.source }}/files imagebuilder/
+        if [[ "${{ steps.version.outputs.source }}" == "istoreos" ]]; then
+          find arm64/packages/ -name "*.ipk" -exec cp {} imagebuilder/packages/ \;
+        elif [[ "${{ steps.version.outputs.source }}" == "openwrt" ]]; then
+          find arm64/packages/ -name "*.apk" -exec cp {} imagebuilder/packages/ \;
+        fi
+        
+        cd imagebuilder
+        sed -i 's/# CONFIG_TARGET_ROOTFS_TARGZ is not set/CONFIG_TARGET_ROOTFS_TARGZ=y/' .config
+        sed -i "s|CONFIG_TARGET_ROOTFS_CPIOGZ=.*|# CONFIG_TARGET_ROOTFS_CPIOGZ is not set|g" .config
+        sed -i "s|CONFIG_TARGET_ROOTFS_EXT4FS=.*|# CONFIG_TARGET_ROOTFS_EXT4FS is not set|g" .config
+        sed -i "s|CONFIG_TARGET_ROOTFS_SQUASHFS=.*|# CONFIG_TARGET_ROOTFS_SQUASHFS is not set|g" .config
+        sed -i "s|CONFIG_TARGET_IMAGES_GZIP=.*|# CONFIG_TARGET_IMAGES_GZIP is not set|g" .config
+
+    - name: 🧱 构建 Rootfs
+      working-directory: ./imagebuilder
+      run: bash ./build24.sh
+
+    - name: 🐳 构建 Docker 镜像
+      id: docker_build
+      run: |
+        # 查找 rootfs 文件
+        ROOTFS_FILE=$(find imagebuilder/bin/targets/armsr/armv8/ -name "*generic-rootfs.tar.gz" | head -1)
+        
+        # 生成镜像标签
+        IMAGE_TAG="${{ steps.version.outputs.branch }}"
+        DOCKER_IMAGE="${{ steps.version.outputs.source }}:${IMAGE_TAG}"
+        
+        # 直接从 rootfs.tar.gz 导入 Docker 镜像（指定 arm64 平台）
+        gunzip -c "$ROOTFS_FILE" | docker import --platform linux/arm64 - ${DOCKER_IMAGE}
+        
+        # 导出 Docker 镜像（未压缩）
+        docker save ${DOCKER_IMAGE} > ${{ inputs.build_version }}.tar
+        
+        # 保存文件名供后续使用
+        echo "docker_file=${{ inputs.build_version }}.tar" >> $GITHUB_OUTPUT
+
+    - name: 🚀 发布 Release
+      uses: softprops/action-gh-release@v3
+      with:
+        tag_name: OpenWrt_docker_image
+        body: |
+          🐳 介绍： Build OpenWrt Docker image
+          
+          🖥️ 平台： arm64
+          
+          👤 用户名： root
+          
+          🔒 密码： 无
+          
+          🌐 IP： 动态获取（从上级路由找寻）
+        files: |
+          ${{ steps.docker_build.outputs.docker_file }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
