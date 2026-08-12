@@ -87,8 +87,8 @@ jobs:
         
         # 生成镜像标签
         IMAGE_TAG="${{ steps.version.outputs.branch }}"
-        DOCKER_IMAGE="${{ steps.version.outputs.source }}-docker:${IMAGE_TAG}"
-        DOCKER_LATEST="${{ steps.version.outputs.source }}-docker:latest"
+        DOCKER_IMAGE="${{ env.DOCKER_USERNAME }}/${{ steps.version.outputs.source }}-docker:${IMAGE_TAG}"
+        DOCKER_LATEST="${{ env.DOCKER_USERNAME }}/${{ steps.version.outputs.source }}-docker:latest"
         
         # 导入 Docker 镜像（指定 arm64 平台）
         gunzip -c "$ROOTFS_FILE" | docker import --platform linux/arm64 - ${DOCKER_IMAGE}
