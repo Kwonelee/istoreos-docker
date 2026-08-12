@@ -45,6 +45,34 @@ networks:
           gateway: 192.168.5.1 # 这里换成你的NAS所在的网关（比如192.168.5.1）
 ```
 
+<details>
+  <summary>openwrt-docker部署</summary>
+
+```bash
+services:
+  openwrt:
+    image: kwonelee/openwrt-docker:latest
+    container_name: openwrt
+    privileged: true
+    restart: always
+    networks:
+      openwrt_macnet: 
+    command: /sbin/init
+
+networks:
+  openwrt_macnet:
+    name: openwrt_macnet
+    driver: macvlan
+    driver_opts:
+      # 这里替换为你设备的网卡名称（如eth0、end0、enp1s0、enp1s0-ovs等）ip link show可查；不支持无线网卡
+      parent: end0
+    ipam:
+      config:
+        - subnet: 192.168.5.0/24 # 这里换成你的NAS所在的网段(比如192.168.5.0/24)
+          gateway: 192.168.5.1 # 这里换成你的NAS所在的网关（比如192.168.5.1）
+```
+</details>
+
 ## 🌟 Star戳一戳，好运加满！😆
 > **"点过 `Star` 的朋友，颜值与智慧双双在线！✨"**
 > 
