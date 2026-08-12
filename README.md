@@ -1,5 +1,10 @@
 <div align="center">
   <h1>✨ 轻量级 OpenWrt Docker 镜像 ✨</h1>
+
+  <img src="https://img.shields.io/github/downloads/Kwonelee/openwrt-docker/total.svg?style=for-the-badge&color=32C955"/>
+  <img src="https://img.shields.io/github/stars/Kwonelee/openwrt-docker.svg?style=for-the-badge&color=orange"/>
+  <img src="https://img.shields.io/github/forks/Kwonelee/openwrt-docker.svg?style=for-the-badge&color=ff69b4"/>
+  <img src="https://img.shields.io/github/license/Kwonelee/openwrt-docker.svg?style=for-the-badge&color=blueviolet"/>
 </div>
 
 ---
