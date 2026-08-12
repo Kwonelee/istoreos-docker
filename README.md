@@ -20,7 +20,8 @@
 ---
 
 ## 😅 Docker Compose 部署
-iStoreOS-Docker部署
+<details open>
+  <summary>iStoreOS-Docker部署</summary>
 
 ```bash
 services:
@@ -45,6 +46,7 @@ networks:
         - subnet: 192.168.5.0/24 # 这里换成你的NAS所在的网段(比如192.168.5.0/24)
           gateway: 192.168.5.1 # 这里换成你的NAS所在的网关（比如192.168.5.1）
 ```
+</details>
 
 <details>
   <summary>OpenWrt-Docker部署</summary>
