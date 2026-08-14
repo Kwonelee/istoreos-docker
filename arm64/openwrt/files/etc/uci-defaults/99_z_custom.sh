@@ -8,7 +8,7 @@ uci set luci.main.lang='zh_cn'
 uci set system.@system[-1].zonename='Asia/Shanghai'
 
 # 更换软件源
-sed -i 's/downloads.openwrt.org/mirrors.pku.edu.cn/openwrt/g' /etc/apk/repositories.d/distfeeds.list
+sed -i 's/downloads.openwrt.org/mirrors.pku.edu.cn\/openwrt/g' /etc/apk/repositories.d/distfeeds.list
 
 # 更换NTP
 uci delete system.ntp.server 2>/dev/null
