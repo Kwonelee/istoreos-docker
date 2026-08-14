@@ -23,6 +23,7 @@ PACKAGES="$PACKAGES luci-i18n-ttyd-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-firewall-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-ramfree-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-filebrowser-go-zh-cn"
+PACKAGES="$PACKAGES luci-i18n-zerotier-zh-cn"
 
 # 深度优化：Docker环境下共享宿主机内核，不需要任何内核模块
 PACKAGES="$PACKAGES \
