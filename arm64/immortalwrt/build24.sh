@@ -9,10 +9,7 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') - 开始构建固件..."
 PACKAGES=""
 
 # 精简集成列表
-PACKAGES="$PACKAGES -dnsmasq"
-PACKAGES="$PACKAGES dnsmasq-full"
-PACKAGES="$PACKAGES -firewall"
-PACKAGES="$PACKAGES firewall4"
+PACKAGES="dnsmasq-full firewall4 -dnsmasq -firewall"
 PACKAGES="$PACKAGES luci"
 PACKAGES="$PACKAGES luci-i18n-base-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-package-manager-zh-cn"
